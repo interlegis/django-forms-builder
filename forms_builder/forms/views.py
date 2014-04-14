@@ -22,17 +22,19 @@ from forms_builder.forms.utils import split_choices
 
 
 class FormDetail(TemplateView):
-
+    form_class = Form
+    form_for_form_class = FormForForm
     template_name = "forms/form_detail.html"
 
     def get_context_data(self, **kwargs):
         context = super(FormDetail, self).get_context_data(**kwargs)
-        published = Form.objects.published(for_user=self.request.user)
+        published = self.form_class.objects.published(for_user=self.request.user)
         context["form"] = get_object_or_404(published, slug=kwargs["slug"])
         return context
 
     def get(self, request, *args, **kwargs):
         context = self.get_context_data(**kwargs)
+        context["request"] = request
         login_required = context["form"].login_required
         if login_required and not request.user.is_authenticated():
             path = urlquote(request.get_full_path())
@@ -41,9 +43,9 @@ class FormDetail(TemplateView):
         return self.render_to_response(context)
 
     def post(self, request, *args, **kwargs):
-        published = Form.objects.published(for_user=request.user)
+        published = self.form_class.objects.published(for_user=request.user)
         form = get_object_or_404(published, slug=kwargs["slug"])
-        form_for_form = FormForForm(form, RequestContext(request),
+        form_for_form = self.form_for_form_class(form, RequestContext(request),
                                     request.POST or None,
                                     request.FILES or None)
         if not form_for_form.is_valid():
@@ -105,13 +107,25 @@ class FormDetail(TemplateView):
                                fail_silently=EMAIL_FAIL_SILENTLY,
                                headers=headers)
 
+class FormSent(TemplateView):
+    form_class = Form 
+    template_name = "forms/form_sent.html"
+    
+    def get_context_data(self, **kwargs):
+        slug=kwargs["slug"]
+        published = self.form_class.objects.published()
+        context = {"form": get_object_or_404(published, slug=slug)}
+        return context
+
+
+
+#def form_sent(request, slug, template="forms/form_sent.html"):
+#    """
+#    Show the response message.
+#    """
+#    published = Form.objects.published(for_user=request.user)
+#    context = {"form": get_object_or_404(published, slug=slug)}
+#    return render_to_response(template, context, RequestContext(request))
+
 form_detail = FormDetail.as_view()
-
-
-def form_sent(request, slug, template="forms/form_sent.html"):
-    """
-    Show the response message.
-    """
-    published = Form.objects.published(for_user=request.user)
-    context = {"form": get_object_or_404(published, slug=slug)}
-    return render_to_response(template, context, RequestContext(request))
+form_sent = FormSent.as_view()

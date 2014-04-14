@@ -116,11 +116,12 @@ class AbstractForm(models.Model):
 
     def admin_links(self):
         kw = {"args": (self.id,)}
+        bit = (self._meta.model_name, self.entries.model._meta.model_name,)
         links = [
             (_("View form on site"), self.get_absolute_url()),
-            (_("Filter entries"), reverse("admin:form_entries", **kw)),
-            (_("View all entries"), reverse("admin:form_entries_show", **kw)),
-            (_("Export all entries"), reverse("admin:form_entries_export", **kw)),
+            (_("Filter entries"), reverse("admin:%s_%s" % bit, **kw)),
+            (_("View all entries"), reverse("admin:%s_%s_show" % bit, **kw)),
+            (_("Export all entries"), reverse("admin:%s_%s_export" % bit, **kw)),
         ]
         for i, (text, url) in enumerate(links):
             links[i] = "<a href='%s'>%s</a>" % (url, ugettext(text))

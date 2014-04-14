@@ -12,6 +12,8 @@ register = template.Library()
 
 
 class BuiltFormNode(template.Node):
+    form_class = Form
+    form_for_form_class = FormForForm
 
     def __init__(self, name, value):
         self.name = name
@@ -27,18 +29,18 @@ class BuiltFormNode(template.Node):
                 str(self.name): template.Variable(self.value).resolve(context)
             }
             try:
-                form = Form.objects.published(for_user=user).get(**lookup)
-            except Form.DoesNotExist:
+                form = self.form_class.objects.published(for_user=user).get(**lookup)
+            except self.form_class.DoesNotExist:
                 form = None
         else:
             form = template.Variable(self.value).resolve(context)
-        if not isinstance(form, Form) or (form.login_required and not
+        if not isinstance(form, self.form_class) or (form.login_required and not
                                           user.is_authenticated()):
             return ""
         t = get_template("forms/includes/built_form.html")
         context["form"] = form
         form_args = (form, context, post or None, files or None)
-        context["form_for_form"] = FormForForm(*form_args)
+        context["form_for_form"] = self.form_for_form_class(*form_args)
         return t.render(context)
 
 

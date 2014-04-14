@@ -194,15 +194,22 @@ class FormForForm(forms.ModelForm):
                 text = field.placeholder_text
                 self.fields[field_key].widget.attrs["placeholder"] = text
 
+    def entry_save(self, entry):
+        entry.form = self.form
+        entry.entry_time = now()
+        entry.save()
+        
+    def fieldentry_save(self, field_entry):
+        field_entry.save()
+        
     def save(self, **kwargs):
         """
         Get/create a FormEntry instance and assign submitted values to
         related FieldEntry instances for each form field.
         """
         entry = super(FormForForm, self).save(commit=False)
-        entry.form = self.form
-        entry.entry_time = now()
-        entry.save()
+        self.entry_save(entry)
+        
         entry_fields = entry.fields.values_list("field_id", flat=True)
         new_entry_fields = []
         for field in self.form_fields:
@@ -215,7 +222,7 @@ class FormForForm(forms.ModelForm):
             if field.id in entry_fields:
                 field_entry = entry.fields.get(field_id=field.id)
                 field_entry.value = value
-                field_entry.save()
+                self.fieldentry_save(field_entry)
             else:
                 new = {"entry": entry, "field_id": field.id, "value": value}
                 new_entry_fields.append(self.field_entry_model(**new))
@@ -224,7 +231,7 @@ class FormForForm(forms.ModelForm):
                 self.field_entry_model.objects.bulk_create(new_entry_fields)
             else:
                 for field_entry in new_entry_fields:
-                    field_entry.save()
+                    self.fieldentry_save(field_entry)
         return entry
 
     def email_to(self):
