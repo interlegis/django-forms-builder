@@ -273,6 +273,8 @@ class EntriesForm(forms.Form):
             # Checkbox for including in export.
             self.fields["%s_export" % field_key] = forms.BooleanField(
                 label=field.label, initial=True, required=False)
+            self.fields["%s_graphic" % field_key] = forms.URLField(
+                label='Ver grafico', initial='/pesquisas/chart/%s' % field.id, required=False)
             if field.is_a(*fields.CHOICES):
                 # A fixed set of choices to filter by.
                 if field.is_a(fields.CHECKBOX):
@@ -324,7 +326,7 @@ class EntriesForm(forms.Form):
             prefix = "field_%s_" % field_id
             fields = [f for f in super(EntriesForm, self).__iter__()
                       if f.name.startswith(prefix)]
-            yield fields[0], fields[1], fields[2:]
+            yield fields[0], fields[1], fields[2], fields[3:]
 
     def posted_data(self, field):
         """
